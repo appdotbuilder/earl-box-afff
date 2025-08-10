@@ -1,14 +1,25 @@
+import { db } from '../db';
+import { filesTable } from '../db/schema';
+import { count } from 'drizzle-orm';
 import { type UploadCountResponse } from '../schema';
 
-export async function getUploadCount(): Promise<UploadCountResponse> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to return the total count of uploaded files
-    // for display on the main page without revealing individual file information.
-    // Implementation should:
-    // 1. Query the database to count total number of files
-    // 2. Return the count for display purposes
-    
-    return Promise.resolve({
-        total_count: 0 // Placeholder count
-    });
-}
+export const getUploadCount = async (): Promise<UploadCountResponse> => {
+  try {
+    // Query the database to count total number of files
+    const result = await db.select({
+      total_count: count(filesTable.id)
+    })
+    .from(filesTable)
+    .execute();
+
+    // Extract count from result (count returns number)
+    const totalCount = Number(result[0].total_count);
+
+    return {
+      total_count: totalCount
+    };
+  } catch (error) {
+    console.error('Failed to get upload count:', error);
+    throw error;
+  }
+};

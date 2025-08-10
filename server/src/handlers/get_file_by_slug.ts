@@ -1,19 +1,36 @@
+import { db } from '../db';
+import { filesTable } from '../db/schema';
 import { type GetFileBySlugInput, type FileInfoResponse } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export async function getFileBySlug(input: GetFileBySlugInput): Promise<FileInfoResponse> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is to retrieve file information by slug and
-    // generate a public URL for accessing the file from object storage.
-    // Implementation should:
-    // 1. Query the database for file metadata using the slug
-    // 2. Generate a public URL for the file in object storage
-    // 3. Return file info with the public URL for redirection
-    
-    return Promise.resolve({
-        slug: input.slug,
-        content_type: 'application/octet-stream', // Placeholder
-        size_bytes: 0, // Placeholder
-        public_url: 'https://placeholder-storage.com/file',
-        created_at: new Date()
-    });
+  try {
+    // Query the database for file metadata using the slug
+    const results = await db.select()
+      .from(filesTable)
+      .where(eq(filesTable.slug, input.slug))
+      .execute();
+
+    if (results.length === 0) {
+      throw new Error('File not found');
+    }
+
+    const file = results[0];
+
+    // Generate a public URL for the file in object storage
+    // Using the object_name to construct the storage URL
+    const public_url = `https://storage.example.com/${file.object_name}`;
+
+    // Return file info with the public URL
+    return {
+      slug: file.slug,
+      content_type: file.content_type,
+      size_bytes: file.size_bytes,
+      public_url,
+      created_at: file.created_at
+    };
+  } catch (error) {
+    console.error('Failed to get file by slug:', error);
+    throw error;
+  }
 }
